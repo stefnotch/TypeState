@@ -2,17 +2,17 @@ namespace typestate {
    /**
     * Transition grouping to faciliate fluent api
     */
-   export class Transitions<T> {
+   export class Transitions<T extends object> {
       constructor(public fsm: FiniteStateMachine<T>) { }
 
-      public fromStates: T[];
-      public toStates: T[];
+      public fromStates: (keyof T)[];
+      public toStates: (keyof T)[];
 
 
       /**
        * Specify the end state(s) of a transition function
        */
-      public to(...states: T[]) {
+      public to(...states: (keyof T)[]) {
          this.toStates = states;
          this.fsm.addTransitions(this);
       }
@@ -21,12 +21,10 @@ namespace typestate {
        * Takes the state enum as an argument
        */
       public toAny(states: any) {
-         var toStates: T[] = [];
-         for (var s in states) {
-            if (states.hasOwnProperty(s)) {
-               toStates.push((<T>states[s]));
-            }
-         }
+         var toStates: (keyof T)[] = [];
+         Object.keys(states).forEach(s => {
+            toStates.push(<keyof T>s);
+         });
 
          this.toStates = toStates;
          this.fsm.addTransitions(this);
@@ -36,25 +34,27 @@ namespace typestate {
    /**
     * Internal representation of a transition function
     */
-   export class TransitionFunction<T> {
-      constructor(public fsm: FiniteStateMachine<T>, public from: T, public to: T) { }
+   export class TransitionFunction<T extends object> {
+      constructor(public fsm: FiniteStateMachine<T>, public from: keyof T, public to: keyof T) { }
    }
    
    /**
     * A simple finite state machine implemented in TypeScript, the templated argument is meant to be used
     * with an enumeration.
     */
-   export class FiniteStateMachine<T> {
-      public currentState: T;
-      private _startState: T;
+   export class FiniteStateMachine<T extends object> {
+      public currentState: keyof T;
+      public context: T;
+      private _startState: keyof T;
       private _allowImplicitSelfTransition: boolean;
       private _transitionFunctions: TransitionFunction<T>[] = [];
-      private _onCallbacks: { [key: string]: { (from: T, event?: any): void; }[] } = {};
-      private _exitCallbacks: { [key: string]: { (to: T): boolean; }[] } = {};
-      private _enterCallbacks: { [key: string]: { (from: T, event?: any): boolean; }[] } = {};
-      private _invalidTransitionCallback: (to?: T, from?: T) => boolean = null;
+      private _onCallbacks: { [key: string]: { (from: keyof T, context: T[keyof T], event?: any): void; }[] } = {};
+      private _exitCallbacks: { [key: string]: { (to: keyof T, context: T[keyof T]): boolean; }[] } = {};
+      private _enterCallbacks: { [key: string]: { (from: keyof T, context: T[keyof T], event?: any): boolean; }[] } = {};
+      private _invalidTransitionCallback: (to?: keyof T, from?: keyof T) => boolean = null;
 
-      constructor(startState: T, allowImplicitSelfTransition: boolean = false) {
+      constructor(context: T, startState: keyof T, allowImplicitSelfTransition: boolean = false) {
+         this.context = context;
          this.currentState = startState;
          this._startState = startState;
          this._allowImplicitSelfTransition = allowImplicitSelfTransition;
@@ -74,7 +74,7 @@ namespace typestate {
       /**
        * Listen for the transition to this state and fire the associated callback
        */
-      public on(state: T, callback: (from?: T, event?: any) => any): FiniteStateMachine<T> {
+      public on<U extends keyof T>(state: U, callback: (from?: keyof T, context?: T[U], event?: any) => any): FiniteStateMachine<T> {
          var key = state.toString();
          if (!this._onCallbacks[key]) {
             this._onCallbacks[key] = [];
@@ -87,7 +87,7 @@ namespace typestate {
        * Listen for the transition to this state and fire the associated callback, returning
        * false in the callback will block the transition to this state.
        */
-      public onEnter(state: T, callback: (from?: T, event?: any) => boolean): FiniteStateMachine<T> {
+      public onEnter<U extends keyof T>(state: U, callback: (from?: keyof T, context?: T[U], event?: any) => boolean): FiniteStateMachine<T> {
          var key = state.toString();
          if (!this._enterCallbacks[key]) {
             this._enterCallbacks[key] = [];
@@ -100,7 +100,7 @@ namespace typestate {
        * Listen for the transition to this state and fire the associated callback, returning
        * false in the callback will block the transition from this state.
        */
-      public onExit(state: T, callback: (to?: T) => boolean): FiniteStateMachine<T> {
+      public onExit<U extends keyof T>(state: U, callback: (to?: keyof T, context?: T[U]) => boolean): FiniteStateMachine<T> {
          var key = state.toString();
          if (!this._exitCallbacks[key]) {
             this._exitCallbacks[key] = [];
@@ -113,7 +113,7 @@ namespace typestate {
        * List for an invalid transition and handle the error, returning a falsy value will throw an
        * exception, a truthy one will swallow the exception
        */
-      public onInvalidTransition(callback: (from?: T, to?: T) => boolean): FiniteStateMachine<T> {
+      public onInvalidTransition(callback: (from?: keyof T, to?: keyof T) => boolean): FiniteStateMachine<T> {
          if(!this._invalidTransitionCallback){
             this._invalidTransitionCallback = callback
          }
@@ -123,26 +123,24 @@ namespace typestate {
       /**
        * Declares the start state(s) of a transition function, must be followed with a '.to(...endStates)'
        */
-      public from(...states: T[]): Transitions<T> {
+      public from(...states: (keyof T)[]): Transitions<T> {
          var _transition = new Transitions<T>(this);
          _transition.fromStates = states;
          return _transition;
       }
 
       public fromAny(states: any): Transitions<T> {
-         var fromStates: T[] = [];
-         for (var s in states) {
-            if (states.hasOwnProperty(s)) {
-               fromStates.push((<T>states[s]));
-            }
-         }
+         var fromStates: (keyof T)[] = [];
+         Object.keys(states).forEach(s => {
+            fromStates.push(<keyof T>s);
+         });
 
          var _transition = new Transitions<T>(this);
          _transition.fromStates = fromStates;
          return _transition;
       }
 
-      private _validTransition(from: T, to: T): boolean {
+      private _validTransition(from: keyof T, to: keyof T): boolean {
          return this._transitionFunctions.some(tf => {
             return (tf.from === from && tf.to === to);
          });
@@ -153,27 +151,27 @@ namespace typestate {
        *    If allowImplicitSelfTransition is true, always allow transitions from a state back to itself.
        *     Otherwise, check if it's a valid transition.
        */
-      private _canGo(fromState: T, toState: T): boolean {
+      private _canGo(fromState: keyof T, toState: keyof T): boolean {
           return (this._allowImplicitSelfTransition && fromState === toState) || this._validTransition(fromState, toState);
       } 
 
       /**
        * Check whether a transition to a new state is valid
        */
-      public canGo(state: T): boolean {
+      public canGo(state: keyof T): boolean {
           return this._canGo(this.currentState, state);
       }
 
       /**
        * Transition to another valid state
        */
-      public go(state: T, event?: any): void {
+      public go<U extends keyof T>(state: U, contextCallback?: (context?: T[U]) => void, event?: any): void {
          if (!this.canGo(state)) {
             if(!this._invalidTransitionCallback || !this._invalidTransitionCallback(this.currentState, state)){
                throw new Error('Error no transition function exists from state ' + this.currentState.toString() + ' to ' + state.toString());
             }
          } else {
-            this._transitionTo(state, event);
+            this._transitionTo(state, contextCallback, event);
          }
       }
 
@@ -181,7 +179,7 @@ namespace typestate {
        * This method is availble for overridding for the sake of extensibility. 
        * It is called in the event of a successful transition.
        */
-      public onTransition(from: T, to: T) {
+      public onTransition(from: keyof T, to: keyof T) {
          // pass, does nothing until overidden
       }
 
@@ -202,14 +200,16 @@ namespace typestate {
       /**
        * Whether or not the current state equals the given state
        */
-      public is(state: T): boolean {
+      public is(state: keyof T): boolean {
           return this.currentState === state;
       }
 
-      private _transitionTo(state: T, event?: any) {
+      private _transitionTo<U extends keyof T>(state: U, contextCallback?: (context?: T[U]) => void, event?: any) {
          if (!this._exitCallbacks[this.currentState.toString()]) {
             this._exitCallbacks[this.currentState.toString()] = [];
          }
+
+         contextCallback(this.context[state]);
 
          if (!this._enterCallbacks[state.toString()]) {
             this._enterCallbacks[state.toString()] = [];
@@ -220,19 +220,19 @@ namespace typestate {
          }
 
 
-         var canExit = this._exitCallbacks[this.currentState.toString()].reduce<boolean>((accum: boolean, next: (to: T) => boolean) => {
-            return accum && (<boolean>next.call(this, state));
+         var canExit = this._exitCallbacks[this.currentState.toString()].reduce<boolean>((accum: boolean, next: (to: keyof T, context: T[keyof T]) => boolean) => {
+            return accum && (<boolean>next.call(this, state, this.context[state]));
          }, true);
 
-         var canEnter = this._enterCallbacks[state.toString()].reduce<boolean>((accum: boolean, next: (from: T) => boolean) => {
-            return accum && (<boolean>next.call(this, this.currentState, event));
+         var canEnter = this._enterCallbacks[state.toString()].reduce<boolean>((accum: boolean, next: (from: keyof T, context: T[keyof T], event?: any) => boolean) => {
+            return accum && (<boolean>next.call(this, this.currentState, this.context[this.currentState], event));
          }, true);
 
          if (canExit && canEnter) {
             var old = this.currentState;
             this.currentState = state;
             this._onCallbacks[this.currentState.toString()].forEach(fcn => {
-               fcn.call(this, old, event);
+               fcn.call(this, old, this.context[old], event);
             });
             this.onTransition(old, state);
          }

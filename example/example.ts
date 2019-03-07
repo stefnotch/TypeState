@@ -4,31 +4,31 @@
 // Let's model the states of an elevator
 
 // Define an Enum with all possible valid states
-enum Elevator {
-   DoorsOpened,
-   DoorsClosed,
-   Moving
+class Elevator {
+   DoorsOpened = {a:1};
+   DoorsClosed = {b: 3};
+   Moving = "Henlo"
 }
 
 // Construct the FSM with the inital state, in this case the elevator starts with its doors opened
-var fsm = new typestate.FiniteStateMachine<Elevator>(Elevator.DoorsOpened);
+var fsm = new typestate.FiniteStateMachine(new Elevator(), "DoorsClosed");
 
 // Declare the valid state transitions to model your system
 
 // Doors can go from opened to closed, and vice versa
-fsm.from(Elevator.DoorsOpened).to(Elevator.DoorsClosed);
-fsm.from(Elevator.DoorsClosed).to(Elevator.DoorsOpened);
+fsm.from("DoorsOpened").to("DoorsClosed");
+fsm.from("DoorsClosed").to("DoorsOpened");
 
 // Once the doors are closed the elevator may move
-fsm.from(Elevator.DoorsClosed).to(Elevator.Moving);
+fsm.from("DoorsClosed").to("Moving");
 
 // When the elevator reaches its destination, it may stop moving
-fsm.from(Elevator.Moving).to(Elevator.DoorsClosed);
+fsm.from("Moving").to("DoorsClosed");
 
 var handsInDoor = false;
 
 // Listen for transitions to DoorsClosed, if the callback returns false the transition is canceled.
-fsm.onEnter(Elevator.DoorsClosed, ()=>{
+fsm.onEnter("DoorsClosed", ()=>{
    if(handsInDoor){
       return false;
    }
@@ -39,37 +39,37 @@ fsm.onEnter(Elevator.DoorsClosed, ()=>{
 class ViewModel {
    constructor() { }
    public HandsInDoor: KnockoutObservable<boolean> = ko.observable<boolean>()
-   public CurrentState: KnockoutObservable<Elevator> = ko.observable<Elevator>(fsm.currentState)
+   public CurrentState: KnockoutObservable<keyof Elevator> = ko.observable<keyof Elevator>(fsm.currentState)
  
    public Move() {
-      fsm.go(Elevator.Moving);
+      fsm.go("Moving");
       this.CurrentState(fsm.currentState);
    }
 
    public Open() {
-      fsm.go(Elevator.DoorsOpened);
+      fsm.go("DoorsOpened");
       this.CurrentState(fsm.currentState);
    }
 
    public Close() {
-      fsm.go(Elevator.DoorsClosed);
+      fsm.go("DoorsClosed");
       this.CurrentState(fsm.currentState);
    }
 
 
    public CanMove: KnockoutComputed<boolean> = ko.computed<boolean>(() => {
       this.CurrentState();
-      return fsm.canGo(Elevator.Moving);
+      return fsm.canGo("Moving");
    });
 
    public CanOpen: KnockoutComputed<boolean> = ko.computed<boolean>(() => {
       this.CurrentState();
-      return fsm.canGo(Elevator.DoorsOpened);
+      return fsm.canGo("DoorsOpened");
    });
 
    public CanClose: KnockoutComputed<boolean> = ko.computed<boolean>(() => {
       this.CurrentState();
-      return fsm.canGo(Elevator.DoorsClosed);
+      return fsm.canGo("DoorsClosed");
    });
 
 }
