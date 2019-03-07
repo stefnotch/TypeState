@@ -1,16 +1,20 @@
 /// <reference path="../dist/typestate.d.ts" />
 /// <reference path="knockout.d.ts" />
-declare enum Elevator {
-    DoorsOpened = 0,
-    DoorsClosed = 1,
-    Moving = 2,
+declare class Elevator {
+    DoorsOpened: {
+        a: number;
+    };
+    DoorsClosed: {
+        b: number;
+    };
+    Moving: string;
 }
 declare var fsm: typestate.FiniteStateMachine<Elevator>;
 declare var handsInDoor: boolean;
 declare class ViewModel {
     constructor();
     HandsInDoor: KnockoutObservable<boolean>;
-    CurrentState: KnockoutObservable<Elevator>;
+    CurrentState: KnockoutObservable<keyof Elevator>;
     Move(): void;
     Open(): void;
     Close(): void;
