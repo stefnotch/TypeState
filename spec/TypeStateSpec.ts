@@ -2,16 +2,17 @@ import "./support/jasmine";
 import {typestate} from "../dist/typestate-node";
 import {TypeState} from "../dist/typestate-node";
 
-enum ValidStates {
-      A,
-      B,
-      C,
-      D
+class ValidStates {
+      A = 0;
+      B = 1;
+      C = 2;
+      D = 3;
 }
+
 describe('A finite state machine', ()=>{
    var fsm: TypeState.FiniteStateMachine<ValidStates>;
    beforeEach(() => {
-      fsm = new TypeState.FiniteStateMachine<ValidStates>(ValidStates.A);
+      fsm = new TypeState.FiniteStateMachine(new ValidStates(), "A");
    });
 
    it('should exist', ()=>{
@@ -23,122 +24,122 @@ describe('A finite state machine', ()=>{
    });
 
    it('backwards compatible can be instantiated', () => {
-      var fsm2 = new TypeState.FiniteStateMachine<ValidStates>(ValidStates.A);
+      var fsm2 = new TypeState.FiniteStateMachine<ValidStates>(new ValidStates(), "A");
       expect(fsm2).toBeTruthy();
    })
 
-   it('can be instantiated with an enum', ()=>{
+   it('can be instantiated with an object', ()=>{
       expect(fsm).toBeTruthy();
    });
 
    it('validates cannot transition to a state that is not defined', ()=>{
-      expect(fsm.canGo(ValidStates.B)).toBeFalsy();
+      expect(fsm.canGo("B")).toBeFalsy();
    });
 
    it('validates can transition to a state that is defined', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      expect(fsm.canGo(ValidStates.B)).toBeTruthy();
+      fsm.from("A").to("B");
+      expect(fsm.canGo("B")).toBeTruthy();
    });
 
    it('validates cannot transition to a state not directly connected', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.C);
-      expect(fsm.canGo(ValidStates.C)).toBeFalsy();
+      fsm.from("A").to("B");
+      fsm.from("B").to("C");
+      expect(fsm.canGo("C")).toBeFalsy();
    });
 
    it('can transition to a valid', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.C);
-      expect(fsm.currentState).toBe(ValidStates.A);
-      fsm.go(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.B);
-      fsm.go(ValidStates.C);
-      expect(fsm.currentState).toBe(ValidStates.C);
+      fsm.from("A").to("B");
+      fsm.from("B").to("C");
+      expect(fsm.currentState).toBe("A");
+      fsm.go("B");
+      expect(fsm.currentState).toBe("B");
+      fsm.go("C");
+      expect(fsm.currentState).toBe("C");
    });
 
    it('can handle cycles', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.A);
-      expect(fsm.currentState).toBe(ValidStates.A);
+      fsm.from("A").to("B");
+      fsm.from("B").to("A");
+      expect(fsm.currentState).toBe("A");
 
-      fsm.go(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.B);
-      fsm.go(ValidStates.A);
-      expect(fsm.currentState).toBe(ValidStates.A);
+      fsm.go("B");
+      expect(fsm.currentState).toBe("B");
+      fsm.go("A");
+      expect(fsm.currentState).toBe("A");
 
    });
 
    it('can define multiple transitions at once', () => {
-      fsm.from(ValidStates.A, ValidStates.B).to(ValidStates.A, ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.A);
+      fsm.from("A", "B").to("A", "B");
+      expect(fsm.currentState).toBe("A");
 
-      fsm.go(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.B);
-      fsm.go(ValidStates.A);
-      expect(fsm.currentState).toBe(ValidStates.A);
+      fsm.go("B");
+      expect(fsm.currentState).toBe("B");
+      fsm.go("A");
+      expect(fsm.currentState).toBe("A");
    });
 
    it('can handle the wildcard ".fromAny()" from state', ()=>{
-      fsm.fromAny(ValidStates).to(ValidStates.B);
+      fsm.fromAny().to("B");
 
-      this.currentState = ValidStates.A;
-      expect(fsm.canGo(ValidStates.B)).toBe(true);
+      this.currentState = "A";
+      expect(fsm.canGo("B")).toBe(true);
 
-      this.currentState = ValidStates.B;
-      expect(fsm.canGo(ValidStates.B)).toBe(true);
+      this.currentState = "B";
+      expect(fsm.canGo("B")).toBe(true);
 
-      this.currentState = ValidStates.C;
-      expect(fsm.canGo(ValidStates.B)).toBe(true);
+      this.currentState = "C";
+      expect(fsm.canGo("B")).toBe(true);
 
-      this.currentState = ValidStates.D;
-      expect(fsm.canGo(ValidStates.B)).toBe(true);
+      this.currentState = "D";
+      expect(fsm.canGo("B")).toBe(true);
    });
 
    it('can handle the wildcard ".toAny()" to state', ()=>{
-      fsm.from(ValidStates.A).toAny(ValidStates);
+      fsm.from("A").toAny();
 
-      expect(fsm.canGo(ValidStates.A)).toBe(true);
-      expect(fsm.canGo(ValidStates.B)).toBe(true);
-      expect(fsm.canGo(ValidStates.C)).toBe(true);
-      expect(fsm.canGo(ValidStates.D)).toBe(true);
+      expect(fsm.canGo("A")).toBe(true);
+      expect(fsm.canGo("B")).toBe(true);
+      expect(fsm.canGo("C")).toBe(true);
+      expect(fsm.canGo("D")).toBe(true);
    });
 
    it('throws an error when transitioning to an invalid state', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.A);
-      expect(() => { fsm.go(ValidStates.C); }).toThrowError('Error no transition function exists from state ' + ValidStates.A.toString() + ' to ' + ValidStates.C.toString());
+      fsm.from("A").to("B");
+      expect(fsm.currentState).toBe("A");
+      expect(() => { fsm.go("C"); }).toThrowError('Error no transition function exists from state ' + "A".toString() + ' to ' + "C".toString());
    });
    
    it('can handle an invalid state transition', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      var fromResult: ValidStates;
-      var toResult: ValidStates;
+      fsm.from("A").to("B");
+      var fromResult: keyof ValidStates;
+      var toResult: keyof ValidStates;
       fsm.onInvalidTransition((from, to) => {
          fromResult = from;
          toResult = to;
          return true;
       });
-      fsm.go(ValidStates.C);
-      expect(fromResult).toBe(ValidStates.A);
-      expect(toResult).toBe(ValidStates.C);
-      expect(fsm.currentState).toBe(ValidStates.A);
+      fsm.go("C");
+      expect(fromResult).toBe("A");
+      expect(toResult).toBe("C");
+      expect(fsm.currentState).toBe("A");
       
    });
 
    it('fires "on" callbacks when transitioning to a listend state', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
+      fsm.from("A").to("B");
       var called = 0;
       var callback = () => {
          called += 1;
       };
-      fsm.on(ValidStates.B, callback);
-      fsm.go(ValidStates.B);
+      fsm.on("B", callback);
+      fsm.go("B");
       expect(called).toBe(1);
    });
 
    it('can block transitions to by returning false onEnter events', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.onEnter(ValidStates.B, () => {
+      fsm.from("A").to("B");
+      fsm.onEnter("B", () => {
          return false;
       });
 
@@ -147,17 +148,17 @@ describe('A finite state machine', ()=>{
          called += 1;
       };
 
-      fsm.on(ValidStates.B, callback);
+      fsm.on("B", callback);
 
-      fsm.go(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.A);
+      fsm.go("B");
+      expect(fsm.currentState).toBe("A");
       expect(called).toBe(0);
    });
 
    it('can block transitions from by returning false onExit events', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.A);
-      fsm.onExit(ValidStates.B, () => {
+      fsm.from("A").to("B");
+      fsm.from("B").to("A");
+      fsm.onExit("B", () => {
          return false;
       });
 
@@ -166,130 +167,161 @@ describe('A finite state machine', ()=>{
          called += 1;
       };
 
-      fsm.on(ValidStates.A, callback);
+      fsm.on("A", callback);
 
-      fsm.go(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.B);
+      fsm.go("B");
+      expect(fsm.currentState).toBe("B");
 
-      fsm.go(ValidStates.A);
-      expect(fsm.currentState).toBe(ValidStates.B);
+      fsm.go("A");
+      expect(fsm.currentState).toBe("B");
       expect(called).toBe(0);
    });
 
    it('passes the "from" state to the ".on" callback', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.A);
-      var fromState: ValidStates;
-      fsm.on(ValidStates.B, (from: ValidStates) => {
+      fsm.from("A").to("B");
+      fsm.from("B").to("A");
+      var fromState: keyof ValidStates;
+      fsm.on("B", (from: keyof ValidStates) => {
          fromState = from;
       });
-      fsm.go(ValidStates.B);
-      expect(fromState).toBe(ValidStates.A);
+      fsm.go("B");
+      expect(fromState).toBe("A");
    });
 
    it('passes the "from" state to the ".onEnter" callback', ()=>{
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.A);
-      var fromState: ValidStates;
-      fsm.onEnter(ValidStates.B, (from: ValidStates) => {
+      fsm.from("A").to("B");
+      fsm.from("B").to("A");
+      var fromState: keyof ValidStates;
+      fsm.onEnter("B", (from: keyof ValidStates) => {
          fromState = from;
          return false;
       });
-      fsm.go(ValidStates.B);
-      expect(fromState).toBe(ValidStates.A);
+      fsm.go("B");
+      expect(fromState).toBe("A");
    });
 
    it('passes the "to" state to the ".onExit" callback', ()=>{
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.A);
-      var toState: ValidStates;
-      fsm.onExit(ValidStates.A, (to: ValidStates) => {
+      fsm.from("A").to("B");
+      fsm.from("B").to("A");
+      var toState: keyof ValidStates;
+      fsm.onExit("A", (to: keyof ValidStates) => {
          toState = to;
          return false;
       });
-      fsm.go(ValidStates.B);
-      expect(toState).toBe(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.A);
+      fsm.go("B");
+      expect(toState).toBe("B");
+      expect(fsm.currentState).toBe("A");
    });
 
    it('can be reset', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.C);
-      expect(fsm.currentState).toBe(ValidStates.A);
-      fsm.go(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.B);
-      fsm.go(ValidStates.C);
-      expect(fsm.currentState).toBe(ValidStates.C);
+      fsm.from("A").to("B");
+      fsm.from("B").to("C");
+      expect(fsm.currentState).toBe("A");
+      fsm.go("B");
+      expect(fsm.currentState).toBe("B");
+      fsm.go("C");
+      expect(fsm.currentState).toBe("C");
       fsm.reset();
-      expect(fsm.currentState).toBe(ValidStates.A);
+      expect(fsm.currentState).toBe("A");
    });
 
    it('can be reset with optional options', () => {
       let onCallbackRan = false;
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.on(ValidStates.A, () => {
+      fsm.from("A").to("B");
+      fsm.on("A", () => {
          onCallbackRan = true;
       })
-      fsm.go(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.B);
+      fsm.go("B");
+      expect(fsm.currentState).toBe("B");
       fsm.reset();
-      expect(fsm.currentState).toBe(ValidStates.A);
+      expect(fsm.currentState).toBe("A");
       expect(onCallbackRan).toBe(false);
-      fsm.go(ValidStates.B);
-      expect(fsm.currentState).toBe(ValidStates.B);
+      fsm.go("B");
+      expect(fsm.currentState).toBe("B");
       fsm.reset({runCallbacks: true});
-      expect(fsm.currentState).toBe(ValidStates.A);
+      expect(fsm.currentState).toBe("A");
       expect(onCallbackRan).toBe(true);
    });
 
    it('can have the onTransition method overridden', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
-      fsm.from(ValidStates.B).to(ValidStates.C);
-      expect(fsm.currentState).toBe(ValidStates.A);
-      var lastFrom: ValidStates;
-      var lastTo: ValidStates;
-      fsm.onTransition = function(from: ValidStates, to: ValidStates){
+      fsm.from("A").to("B");
+      fsm.from("B").to("C");
+      expect(fsm.currentState).toBe("A");
+      var lastFrom: keyof ValidStates;
+      var lastTo: keyof ValidStates;
+      fsm.onTransition = function(from: keyof ValidStates, to: keyof ValidStates){
          lastFrom = from;
          lastTo = to;
       }
 
-      fsm.go(ValidStates.B);
-      expect(lastFrom).toBe(ValidStates.A);
-      expect(lastTo).toBe(ValidStates.B);
+      fsm.go("B");
+      expect(lastFrom).toBe("A");
+      expect(lastTo).toBe("B");
 
-      fsm.go(ValidStates.C);
-      expect(lastFrom).toBe(ValidStates.B);
-      expect(lastTo).toBe(ValidStates.C);
+      fsm.go("C");
+      expect(lastFrom).toBe("B");
+      expect(lastTo).toBe("C");
 
    });
    
    it('can compare current state', () => {
-      expect(fsm.is(ValidStates.A)).toBe(true);
+      expect(fsm.is("A")).toBe(true);
    });
 
    it('can pass event data on transition', () => {
-      fsm.from(ValidStates.A).to(ValidStates.B);
+      fsm.from("A").to("B");
 
       let eventData = 'test';
       let receivedData: any;
 
-      fsm.on(ValidStates.B, (from: ValidStates, data?: any) => {
+      fsm.on("B", (from: keyof ValidStates, context, data?: any) => {
          receivedData = data;
       });
 
-      fsm.go(ValidStates.B, eventData);
-      expect(fsm.currentState).toBe(ValidStates.B);
+      fsm.go("B", null, eventData);
+      expect(fsm.currentState).toBe("B");
       expect(receivedData).toBe(eventData);
    });
 
    it('doesn\'t allow states to transition into themselves by default', () => {
-       expect(fsm.canGo(ValidStates.A)).toBe(false);
+       expect(fsm.canGo("A")).toBe(false);
    });
 
    it('can allow states to transition into themselves by default', () => {
-       var fsm2 = new TypeState.FiniteStateMachine<ValidStates>(ValidStates.A, true);
-       expect(fsm2.canGo(ValidStates.A)).toBe(true);
+       var fsm2 = new TypeState.FiniteStateMachine<ValidStates>(new ValidStates(),"A", true);
+       expect(fsm2.canGo("A")).toBe(true);
    });
 
+   it('can pass a context between transitions', () => {
+      class ValidStatesWithContext {
+         A = {a:1};
+         B = {b: 1};
+         C = null;
+      }
+      var fsm2 = new TypeState.FiniteStateMachine<ValidStatesWithContext>(new ValidStatesWithContext(), "A", true);
+      fsm2.from("A").to("B");
+      fsm2.from("B").to("C");
 
+      fsm2.onEnter("B", (from, context) => {
+         expect(context.b).toBe(7);
+         return true;
+      });
+      fsm2.on("B", (from, context) => {
+         expect(context.b).toBe(7);
+      });
+      fsm2.onExit("B", (from, context) => {
+         expect(context.b).toBe(7);
+         return true;
+      });
+      fsm2.on("C", (from, context) => {
+         expect(context).toBe(null);
+      });
+
+      fsm2.go("B", (context) => { 
+         expect(context.b).toBe(1);
+         context.b = 7;
+      });
+
+      fsm2.go("C", (context) => {expect(context).toBe(null)});
+   })
 });
