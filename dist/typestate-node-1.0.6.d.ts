@@ -1,4 +1,4 @@
-/*! typestate - v1.0.6 - 2019-03-07
+/*! typestate - v1.0.6 - 2019-03-08
 * https://github.com/eonarheim/TypeState
 * Copyright (c) 2019 Erik Onarheim; Licensed BSD-2-Clause*/
 declare namespace typestate {
@@ -18,7 +18,7 @@ declare namespace typestate {
          * Specify that any state in the state enum is value
          * Takes the state enum as an argument
          */
-        toAny(states: any): void;
+        toAny(): void;
     }
     /**
      * Internal representation of a transition function
@@ -35,7 +35,7 @@ declare namespace typestate {
      */
     class FiniteStateMachine<T extends object> {
         currentState: keyof T;
-        context: T;
+        contextContainer: T;
         private _startState;
         private _allowImplicitSelfTransition;
         private _transitionFunctions;
@@ -43,7 +43,7 @@ declare namespace typestate {
         private _exitCallbacks;
         private _enterCallbacks;
         private _invalidTransitionCallback;
-        constructor(context: T, startState: keyof T, allowImplicitSelfTransition?: boolean);
+        constructor(contextContainer: T, startState: keyof T, allowImplicitSelfTransition?: boolean);
         addTransitions(fcn: Transitions<T>): void;
         /**
          * Listen for the transition to this state and fire the associated callback
@@ -68,7 +68,7 @@ declare namespace typestate {
          * Declares the start state(s) of a transition function, must be followed with a '.to(...endStates)'
          */
         from(...states: (keyof T)[]): Transitions<T>;
-        fromAny(states: any): Transitions<T>;
+        fromAny(): Transitions<T>;
         private _validTransition;
         /**
          * Check whether a transition between any two states is valid.

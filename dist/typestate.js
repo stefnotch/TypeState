@@ -33,9 +33,9 @@ var typestate;
          * Specify that any state in the state enum is value
          * Takes the state enum as an argument
          */
-        Transitions.prototype.toAny = function (states) {
+        Transitions.prototype.toAny = function () {
             var toStates = [];
-            Object.keys(states).forEach(function (s) {
+            Object.keys(this.fsm.contextContainer).forEach(function (s) {
                 toStates.push(s);
             });
             this.toStates = toStates;
@@ -61,14 +61,14 @@ var typestate;
      * with an enumeration.
      */
     var FiniteStateMachine = /** @class */ (function () {
-        function FiniteStateMachine(context, startState, allowImplicitSelfTransition) {
+        function FiniteStateMachine(contextContainer, startState, allowImplicitSelfTransition) {
             if (allowImplicitSelfTransition === void 0) { allowImplicitSelfTransition = false; }
             this._transitionFunctions = [];
             this._onCallbacks = {};
             this._exitCallbacks = {};
             this._enterCallbacks = {};
             this._invalidTransitionCallback = null;
-            this.context = context;
+            this.contextContainer = contextContainer;
             this.currentState = startState;
             this._startState = startState;
             this._allowImplicitSelfTransition = allowImplicitSelfTransition;
@@ -141,9 +141,9 @@ var typestate;
             _transition.fromStates = states;
             return _transition;
         };
-        FiniteStateMachine.prototype.fromAny = function (states) {
+        FiniteStateMachine.prototype.fromAny = function () {
             var fromStates = [];
-            Object.keys(states).forEach(function (s) {
+            Object.keys(this.contextContainer).forEach(function (s) {
                 fromStates.push(s);
             });
             var _transition = new Transitions(this);
@@ -214,7 +214,8 @@ var typestate;
             if (!this._exitCallbacks[this.currentState.toString()]) {
                 this._exitCallbacks[this.currentState.toString()] = [];
             }
-            contextCallback(this.context[state]);
+            if (contextCallback)
+                contextCallback(this.contextContainer[state]);
             if (!this._enterCallbacks[state.toString()]) {
                 this._enterCallbacks[state.toString()] = [];
             }
@@ -222,16 +223,16 @@ var typestate;
                 this._onCallbacks[state.toString()] = [];
             }
             var canExit = this._exitCallbacks[this.currentState.toString()].reduce(function (accum, next) {
-                return accum && next.call(_this, state, _this.context[state]);
+                return accum && next.call(_this, state, _this.contextContainer[_this.currentState]);
             }, true);
             var canEnter = this._enterCallbacks[state.toString()].reduce(function (accum, next) {
-                return accum && next.call(_this, _this.currentState, _this.context[_this.currentState], event);
+                return accum && next.call(_this, _this.currentState, _this.contextContainer[state], event);
             }, true);
             if (canExit && canEnter) {
                 var old = this.currentState;
                 this.currentState = state;
                 this._onCallbacks[this.currentState.toString()].forEach(function (fcn) {
-                    fcn.call(_this, old, _this.context[old], event);
+                    fcn.call(_this, old, _this.contextContainer[state], event);
                 });
                 this.onTransition(old, state);
             }
