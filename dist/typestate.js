@@ -119,6 +119,21 @@ var typestate;
             this._exitCallbacks[key].push(callback);
             return this;
         };
+        FiniteStateMachine.prototype.stateTimeout = function (state, to, timeout) {
+            var _this = this;
+            this.on(state, function (from, context) {
+                context.timeout = setTimeout(function () {
+                    _this.go(to);
+                }, timeout);
+            });
+            this.onExit(state, function (from, context) {
+                if (context.timeout) {
+                    clearTimeout(context.timeout);
+                    context.timeout = 0;
+                }
+                return true;
+            });
+        };
         /**
          * List for an invalid transition and handle the error, returning a falsy value will throw an
          * exception, a truthy one will swallow the exception

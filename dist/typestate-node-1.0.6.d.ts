@@ -1,4 +1,4 @@
-/*! typestate - v1.0.6 - 2019-03-08
+/*! typestate - v1.0.6 - 2019-03-09
 * https://github.com/eonarheim/TypeState
 * Copyright (c) 2019 Erik Onarheim; Licensed BSD-2-Clause*/
 declare namespace typestate {
@@ -59,6 +59,7 @@ declare namespace typestate {
          * false in the callback will block the transition from this state.
          */
         onExit<U extends keyof T>(state: U, callback: (to?: keyof T, context?: T[U]) => boolean): FiniteStateMachine<T>;
+        stateTimeout<U extends keyof T>(state: U, to: keyof T, timeout: number): void;
         /**
          * List for an invalid transition and handle the error, returning a falsy value will throw an
          * exception, a truthy one will swallow the exception

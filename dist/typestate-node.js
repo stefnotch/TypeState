@@ -11,7 +11,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 exports.__esModule = true;
-/*! typestate - v1.0.6 - 2019-03-08
+/*! typestate - v1.0.6 - 2019-03-09
 * https://github.com/eonarheim/TypeState
 * Copyright (c) 2019 Erik Onarheim; Licensed BSD-2-Clause*/
 var typestate;
@@ -123,6 +123,21 @@ var typestate;
             }
             this._exitCallbacks[key].push(callback);
             return this;
+        };
+        FiniteStateMachine.prototype.stateTimeout = function (state, to, timeout) {
+            var _this = this;
+            this.on(state, function (from, context) {
+                context.timeout = setTimeout(function () {
+                    _this.go(to);
+                }, timeout);
+            });
+            this.onExit(state, function (from, context) {
+                if (context.timeout) {
+                    clearTimeout(context.timeout);
+                    context.timeout = 0;
+                }
+                return true;
+            });
         };
         /**
          * List for an invalid transition and handle the error, returning a falsy value will throw an
