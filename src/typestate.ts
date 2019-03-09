@@ -108,6 +108,22 @@ namespace typestate {
          this._exitCallbacks[key].push(callback);
          return this;
       }
+
+      public stateTimeout<U extends keyof T>(state: U, to: keyof T, timeout: number) {
+         this.on(state, (from, context) => {
+            (<any>context).timeout = setTimeout(() => {
+              this.go(to);
+            }, timeout);
+          });
+        
+          this.onExit(state, (from, context) => {
+            if ((<any>context).timeout) {
+              clearTimeout((<any>context).timeout);
+              (<any>context).timeout = 0;
+            }
+            return true;
+          });
+      }
       
       /**
        * List for an invalid transition and handle the error, returning a falsy value will throw an
