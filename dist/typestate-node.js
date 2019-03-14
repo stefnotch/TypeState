@@ -11,7 +11,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 exports.__esModule = true;
-/*! typestate - v1.0.6 - 2019-03-09
+/*! typestate - v1.0.6 - 2019-03-14
 * https://github.com/eonarheim/TypeState
 * Copyright (c) 2019 Erik Onarheim; Licensed BSD-2-Clause*/
 var typestate;
@@ -243,10 +243,18 @@ var typestate;
                 this._onCallbacks[state.toString()] = [];
             }
             var canExit = this._exitCallbacks[this.currentState.toString()].reduce(function (accum, next) {
-                return accum && next.call(_this, state, _this.contextContainer[_this.currentState]);
+                var retVal = next.call(_this, state, _this.contextContainer[_this.currentState]);
+                if (retVal === undefined) {
+                    retVal = true; // If the user didn't return anything...
+                }
+                return accum && retVal;
             }, true);
             var canEnter = this._enterCallbacks[state.toString()].reduce(function (accum, next) {
-                return accum && next.call(_this, _this.currentState, _this.contextContainer[state], event);
+                var retVal = next.call(_this, _this.currentState, _this.contextContainer[state], event);
+                if (retVal === undefined) {
+                    retVal = true; // If the user didn't return anything...
+                }
+                return accum && retVal;
             }, true);
             if (canExit && canEnter) {
                 var old = this.currentState;

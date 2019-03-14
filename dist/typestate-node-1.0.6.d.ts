@@ -1,4 +1,4 @@
-/*! typestate - v1.0.6 - 2019-03-09
+/*! typestate - v1.0.6 - 2019-03-14
 * https://github.com/eonarheim/TypeState
 * Copyright (c) 2019 Erik Onarheim; Licensed BSD-2-Clause*/
 declare namespace typestate {
