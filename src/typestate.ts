@@ -237,11 +237,19 @@ namespace typestate {
 
 
          var canExit = this._exitCallbacks[this.currentState.toString()].reduce<boolean>((accum: boolean, next: (to: keyof T, context: T[keyof T]) => boolean) => {
-            return accum && (<boolean>next.call(this, state, this.contextContainer[this.currentState]));
+            let retVal = next.call(this, state, this.contextContainer[this.currentState]);
+            if(retVal === undefined) {
+               retVal = true; // If the user didn't return anything...
+            }
+            return accum && (<boolean>retVal);
          }, true);
 
          var canEnter = this._enterCallbacks[state.toString()].reduce<boolean>((accum: boolean, next: (from: keyof T, context: T[keyof T], event?: any) => boolean) => {
-            return accum && (<boolean>next.call(this, this.currentState, this.contextContainer[state], event));
+            let retVal = next.call(this, this.currentState, this.contextContainer[state], event);
+            if(retVal === undefined) {
+               retVal = true; // If the user didn't return anything...
+            }
+            return accum && (<boolean>retVal);
          }, true);
 
          if (canExit && canEnter) {
